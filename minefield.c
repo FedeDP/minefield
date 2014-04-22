@@ -11,12 +11,12 @@ typedef struct {
 	int nearby;   /* =-1 if bomb. Else is the number of bombs near the cell. */
 } grid;
 
-void grid_init(grid a[][N], int bombs); /* initialize grid */
-int num_bombs(void); /* calculate bomb's number */
-void cascadeuncover(grid a[][N], int i, int k, int row, int col, int horiz_space, int vert_space); /* uncover until there are 0-bombs-cell */
-int checknear(grid a[][N], int i, int k); /* check number of bombs nearby */
-int win_check(grid a[][N]); /* check if we won */
-void victory_check(grid a[][N], int victory, int rowtot, int coltot); /* final check */
+static void grid_init(grid a[][N], int bombs); /* initialize grid */
+static int num_bombs(void); /* calculate bomb's number */
+static void cascadeuncover(grid a[][N], int i, int k, int row, int col, int horiz_space, int vert_space); /* uncover until there are 0-bombs-cell */
+static int checknear(grid a[][N], int i, int k); /* check number of bombs nearby */
+static int win_check(grid a[][N]); /* check if we won */
+static void victory_check(grid a[][N], int victory, int rowtot, int coltot); /* final check */
 
 int main(void)
 {
@@ -118,7 +118,7 @@ int main(void)
 	return 0;
 }
 
-void grid_init(grid a[][N], int bombs)
+static void grid_init(grid a[][N], int bombs)
 {
 	int i, k, row, col;
 	for (i = 0; i < N; i++) {
@@ -141,7 +141,7 @@ void grid_init(grid a[][N], int bombs)
 	}
 }
 
-int num_bombs(void)
+static int num_bombs(void)
 {
 	int bombs;
 	do {
@@ -166,7 +166,7 @@ int num_bombs(void)
 	return bombs;
 }
 
-void cascadeuncover(grid a[][N], int i, int k, int row, int col, int horiz_space, int vert_space)
+static void cascadeuncover(grid a[][N], int i, int k, int row, int col, int horiz_space, int vert_space)
 {
 	if (((i >= 0) && (i < N) && (k >= 0) && (k < N)) && (a[i][k].sign == '-')) {
 		a[i][k].sign = '0' + a[i][k].nearby;
@@ -196,14 +196,14 @@ void cascadeuncover(grid a[][N], int i, int k, int row, int col, int horiz_space
 	}
 }
 
-int checknear(grid a[][N], int i, int k)
+static int checknear(grid a[][N], int i, int k)
 {
 	if ((i >= 0) && (k >= 0) && (i < N) && (k < N) && (a[i][k].nearby == -1))
 		return 1;
 	return 0;
 }
 
-int win_check(grid a[][N])
+static int win_check(grid a[][N])
 {
 	int i, k;
 	for (i = 0; i < N; i++) {
@@ -215,7 +215,7 @@ int win_check(grid a[][N])
 	return 1; /* S**t! you won :( */
 }
 
-void victory_check(grid a[][N], int victory, int rowtot, int coltot)
+static void victory_check(grid a[][N], int victory, int rowtot, int coltot)
 {
 	char winmesg[] = "YOU WIN! It was just luck...";
 	char losemesg[] = "You're a **cking loser.";
