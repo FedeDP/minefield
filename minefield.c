@@ -158,7 +158,7 @@ static void grid_init(grid a[][N], int bombs)
 	for (i = 0; i < N; i++) {
 		for (k = 0; k < N; k++) {
 			if (a[i][k].nearby != -1)
-				a[i][k].nearby = checknear(a, i - 1, k - 1) + checknear(a, i - 1, k) + checknear(a, i - 1, k + 1) + checknear(a, i, k - 1) + checknear(a, i, k + 1) + checknear(a, i + 1, k - 1) + checknear(a, i + 1, k) + checknear(a, i + 1, k + 1);
+				a[i][k].nearby = checknear(a, i, k);
 		}
 	}
 }
@@ -190,6 +190,7 @@ static int num_bombs(void)
 
 static void cascadeuncover(grid a[][N], int i, int k)
 {
+	int m, n;
 	if ((i, k >= 0) && (i, k < N) && (a[i][k].sign == '-')) {
 		a[i][k].sign = '0' + a[i][k].nearby;
 		move(row + i * vert_space, col + k * horiz_space);
@@ -206,23 +207,27 @@ static void cascadeuncover(grid a[][N], int i, int k)
 			printw("%c", a[i][k].sign);
 			attroff(COLOR_PAIR);
 			attroff(A_BOLD);
-			cascadeuncover(a, i, k + 1);
-			cascadeuncover(a, i, k - 1);
-			cascadeuncover(a, i + 1, k);
-			cascadeuncover(a, i - 1, k);
-			cascadeuncover(a, i - 1, k + 1);
-			cascadeuncover(a, i - 1, k - 1);
-			cascadeuncover(a, i + 1, k + 1);
-			cascadeuncover(a, i + 1, k - 1);
+			for (m = -1; m < 2; m++) {
+				for (n = -1; n < 2; n++)
+					cascadeuncover(a, i + m, k + n);
+			}
 		}
 	}
 }
 
 static int checknear(grid a[][N], int i, int k)
 {
-	if ((i, k >= 0) && (i, k < N) && (a[i][k].nearby == -1))
-		return 1;
-	return 0;
+	int m, n, sum = 0;
+	for (m = -1; m < 2; m++) {
+		if ((i + m >= 0) && (i + m < N)) {
+			for (n = -1; n < 2; n++) {
+				if ((a[i + m][k + n].nearby == -1) &&
+				    (k + n >= 0) && (k + n < N))
+					sum++;
+			}
+		}
+	}
+	return sum;
 }
 
 static int win_check(grid a[][N])
