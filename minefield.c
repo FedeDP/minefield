@@ -167,7 +167,8 @@ static int num_bombs(void)
 {
 	int bombs;
 	do {
-		printf("Select level.\n*1 for easy, 2 for medium, 3 for hard, 4 for...good luck!.\n");
+		printf("Select level.\n*1 for easy, 2 for medium, ");
+		printf("3 for hard, 4 for...good luck!.\n");
 		scanf("%d", &bombs);
 	} while ((bombs < 1) && (bombs > 4));
 	switch (bombs) {
