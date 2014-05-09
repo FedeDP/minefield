@@ -5,14 +5,16 @@
 
 #define N 20
 
-/* char to be printed (* = has bomb, - = covered)
- * nearby = -1 if bomb. Else is the number of bombs near the cell. */
+/*
+* char to be printed (* = has bomb, - = covered)
+* nearby = -1 if bomb. Else is the number of bombs near the cell.
+*/
 typedef struct {
 	char sign;
 	int nearby;
 } grid;
 
-static int screen_init(void);
+static int screen_init(grid a[][N], int bombs);
 static void screen_end(void);
 static void grid_init(grid a[][N], int bombs);
 static int num_bombs(void);
@@ -32,16 +34,8 @@ int main(void)
 	srand(time(NULL));
 	bombs = num_bombs();
 	grid_init(a, bombs);
-	if (screen_init())
+	if (screen_init(a, bombs))
 		return 1;
-	for (i = 0; i < N; i++) {
-		for (k = 0; k < N; k++)
-			mvprintw(row + i * vert_space, col + k * horiz_space,
-				 "%c", a[i][k].sign);
-	}
-	mvprintw(rowtot - 1, 1, "Enter to put a bomb (*). Space to uncover.\n");
-	mvprintw(rowtot - 2, 1, "F2 anytime to *rage* quit.\n");
-	mvprintw(rowtot - 3, 1, "Still %d bombs.\n", bombs);
 	i = 0;
 	k = 0;
 	while ((victory) && (bombs > 0)) {
@@ -96,8 +90,9 @@ int main(void)
 	return 0;
 }
 
-static int screen_init(void)
+static int screen_init(grid a[][N], int bombs)
 {
+	int i, k;
 	/* initialize screen */
 	initscr();
 	start_color();
@@ -127,6 +122,14 @@ static int screen_init(void)
 	/* print grid centered */
 	row = (rowtot - 4 - (N - 1) * vert_space) / 2;
 	col = (coltot - (N - 1) * horiz_space) / 2;
+	for (i = 0; i < N; i++) {
+		for (k = 0; k < N; k++)
+			mvprintw(row + i * vert_space, col + k * horiz_space,
+				 "%c", a[i][k].sign);
+	}
+	mvprintw(rowtot - 1, 1, "Enter to put a bomb (*). Space to uncover.\n");
+	mvprintw(rowtot - 2, 1, "F2 anytime to *rage* quit.\n");
+	mvprintw(rowtot - 3, 1, "Still %d bombs.\n", bombs);
 	return 0;
 }
 
@@ -144,11 +147,7 @@ static void screen_end(void)
 
 static void grid_init(grid a[][N], int bombs)
 {
-	int i, k, row, col;
-	for (i = 0; i < N; i++) {
-		for (k = 0; k < N; k++)
-			a[i][k].sign = '-';
-	}
+	int i, k;
 	for (i = 0; i < bombs; i++) {
 		do {
 			row = rand()%N;
@@ -158,6 +157,7 @@ static void grid_init(grid a[][N], int bombs)
 	}
 	for (i = 0; i < N; i++) {
 		for (k = 0; k < N; k++) {
+			a[i][k].sign = '-';
 			if (a[i][k].nearby != -1)
 				a[i][k].nearby = checknear(a, i, k);
 		}
