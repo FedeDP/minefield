@@ -14,39 +14,39 @@ typedef struct {
 	int nearby;
 } grid;
 
-static int screen_init(grid a[][N], int bombs);
+static int screen_init(grid a[][N]);
 static void screen_end(void);
-static void grid_init(grid a[][N], int bombs);
-static int num_bombs(void);
-static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int *bombs);
+static void grid_init(grid a[][N]);
+static void num_bombs(void);
+static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct);
 static void cascadeuncover(grid a[][N], int i, int k);
 static int checknear(grid a[][N], int i, int k);
 static void victory_check(grid a[][N], int victory, int correct);
 
 /* Global variables */
 int horiz_space, vert_space; /* scaled values to fit terminal size */
-int row, col, rowtot, coltot;
+int row, col, rowtot, coltot, bombs;
 
 int main(void)
 {
-	int bombs, i, k, victory = 1, correct = 1;
+	int i, k, victory = 1, correct = 1;
 	grid a[N][N];
 	srand(time(NULL));
-	bombs = num_bombs();
-	grid_init(a, bombs);
-	if (screen_init(a, bombs))
+	num_bombs();
+	grid_init(a);
+	if (screen_init(a))
 		return 1;
 	i = 0;
 	k = 0;
 	while ((victory) && (bombs > 0)) {
-		if (!main_cycle(a, &i, &k, &victory, &correct, &bombs))
+		if (!main_cycle(a, &i, &k, &victory, &correct))
 			return 0;
 	}
 	victory_check(a, victory, correct);
 	return 0;
 }
 
-static int screen_init(grid a[][N], int bombs)
+static int screen_init(grid a[][N])
 {
 	int i, k;
 	initscr();
@@ -100,7 +100,7 @@ static void screen_end(void)
 	endwin();
 }
 
-static void grid_init(grid a[][N], int bombs)
+static void grid_init(grid a[][N])
 {
 	int i, k;
 	for (i = 0; i < bombs; i++) {
@@ -119,9 +119,8 @@ static void grid_init(grid a[][N], int bombs)
 	}
 }
 
-static int num_bombs(void)
+static void num_bombs(void)
 {
-	int bombs;
 	do {
 		printf("Select level.\n*1 for easy, 2 for medium, ");
 		printf("3 for hard, 4 for...good luck!.\n");
@@ -141,59 +140,58 @@ static int num_bombs(void)
 		bombs = 80;
 		break;
 	}
-	return bombs;
 }
 
-static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int *bombs)
+static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct)
 {
 	move(row + *i * vert_space, col + *k * horiz_space);
 	refresh();
 	switch (getch()) {
-		case KEY_LEFT:
-			if (*k != 0)
-				(*k)--;
-			break;
-		case KEY_RIGHT:
-			if (*k != N-1)
-				(*k)++;
-			break;
-		case KEY_UP:
-			if (*i != 0)
-				(*i)--;
-			break;
-		case KEY_DOWN:
-			if (*i != N-1)
-				(*i)++;
-			break;
-		case 32: /* space to uncover */
-			if (a[*i][*k].sign == '-') {
-				if (a[*i][*k].nearby == -1)
-					*victory = 0;
-				else
-					cascadeuncover(a, *i, *k);
+	case KEY_LEFT:
+		if (*k != 0)
+			(*k)--;
+		break;
+	case KEY_RIGHT:
+		if (*k != N-1)
+			(*k)++;
+		break;
+	case KEY_UP:
+		if (*i != 0)
+			(*i)--;
+		break;
+	case KEY_DOWN:
+		if (*i != N-1)
+			(*i)++;
+		break;
+	case 32: /* space to uncover */
+		if (a[*i][*k].sign == '-') {
+			if (a[*i][*k].nearby == -1)
+				*victory = 0;
+			else
+				cascadeuncover(a, *i, *k);
+		}
+		break;
+	case 10: /* Enter to  identify a bomb */
+		if ((a[*i][*k].sign == '*') || (a[*i][*k].sign == '-')) {
+			if (a[*i][*k].sign == '*') {
+				a[*i][*k].sign = '-';
+				bombs++;
+				if (a[*i][*k].nearby != -1)
+					(*correct)++;
+			} else {
+				a[*i][*k].sign = '*';
+				bombs--;
+				if (a[*i][*k].nearby != -1)
+					(*correct)--;
 			}
-			break;
-		case 10: /* Enter to  identify a bomb */
-			if ((a[*i][*k].sign == '*') || (a[*i][*k].sign == '-')) {
-				if (a[*i][*k].sign == '*') {
-					a[*i][*k].sign = '-';
-					(*bombs)++;
-					if (a[*i][*k].nearby != -1)
-						(*correct)++;
-				} else {
-					a[*i][*k].sign = '*';
-					(*bombs)--;
-					if (a[*i][*k].nearby != -1)
-						(*correct)--;
-				}
-				printw("%c", a[*i][*k].sign);
-				mvprintw(rowtot - 3, 1, "Still %d bombs.\n",
-					 *bombs);
-			}
-			break;
-		case KEY_F(2): /* f2 to exit */
-			screen_end();
-			return 0;
+			printw("%c", a[*i][*k].sign);
+			mvprintw(rowtot - 3, 1, "Still %d bombs.\n",
+				 bombs);
+		}
+		break;
+	case KEY_F(2): /* f2 to exit */
+		screen_end();
+		return 0;
 	}
 	return 1;
 }
