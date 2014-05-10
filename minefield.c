@@ -18,6 +18,7 @@ static int screen_init(grid a[][N], int bombs);
 static void screen_end(void);
 static void grid_init(grid a[][N], int bombs);
 static int num_bombs(void);
+static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int *bombs);
 static void cascadeuncover(grid a[][N], int i, int k);
 static int checknear(grid a[][N], int i, int k);
 static void victory_check(grid a[][N], int victory, int correct);
@@ -38,57 +39,9 @@ int main(void)
 	i = 0;
 	k = 0;
 	while ((victory) && (bombs > 0)) {
-		move(row + i * vert_space, col + k * horiz_space);
-		refresh();
-		switch (getch()) {
-		case KEY_LEFT:
-			if (k != 0)
-				k--;
-			break;
-		case KEY_RIGHT:
-			if (k != N-1)
-				k++;
-			break;
-		case KEY_UP:
-			if (i != 0)
-				i--;
-			break;
-		case KEY_DOWN:
-			if (i != N-1)
-				i++;
-			break;
-		case 32: /* space to uncover */
-			if (a[i][k].sign == '-') {
-				if (a[i][k].nearby == -1)
-					victory = 0;
-				else
-					cascadeuncover(a, i, k);
-			}
-			break;
-		case 10: /* Enter to  identify a bomb */
-			if ((a[i][k].sign == '*') || (a[i][k].sign == '-')) {
-				if (a[i][k].sign == '*') {
-					a[i][k].sign = '-';
-					bombs++;
-					if (a[i][k].nearby != -1)
-						correct++;
-				} else {
-					a[i][k].sign = '*';
-					bombs--;
-					if (a[i][k].nearby != -1)
-						correct--;
-				}
-				printw("%c", a[i][k].sign);
-				mvprintw(rowtot - 3, 1, "Still %d bombs.\n",
-					 bombs);
-			}
-			break;
-		case KEY_F(2): /* f2 to exit */
-			screen_end();
+		if (!main_cycle(a, &i, &k, &victory, &correct, &bombs))
 			return 0;
-		}
 	}
-	/* victory check. */
 	victory_check(a, victory, correct);
 	return 0;
 }
@@ -96,7 +49,6 @@ int main(void)
 static int screen_init(grid a[][N], int bombs)
 {
 	int i, k;
-	/* initialize screen */
 	initscr();
 	start_color();
 	init_pair(1, COLOR_RED, COLOR_BLACK);
@@ -192,6 +144,60 @@ static int num_bombs(void)
 	return bombs;
 }
 
+static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int *bombs)
+{
+	move(row + *i * vert_space, col + *k * horiz_space);
+	refresh();
+	switch (getch()) {
+		case KEY_LEFT:
+			if (*k != 0)
+				(*k)--;
+			break;
+		case KEY_RIGHT:
+			if (*k != N-1)
+				(*k)++;
+			break;
+		case KEY_UP:
+			if (*i != 0)
+				(*i)--;
+			break;
+		case KEY_DOWN:
+			if (*i != N-1)
+				(*i)++;
+			break;
+		case 32: /* space to uncover */
+			if (a[*i][*k].sign == '-') {
+				if (a[*i][*k].nearby == -1)
+					*victory = 0;
+				else
+					cascadeuncover(a, *i, *k);
+			}
+			break;
+		case 10: /* Enter to  identify a bomb */
+			if ((a[*i][*k].sign == '*') || (a[*i][*k].sign == '-')) {
+				if (a[*i][*k].sign == '*') {
+					a[*i][*k].sign = '-';
+					(*bombs)++;
+					if (a[*i][*k].nearby != -1)
+						(*correct)++;
+				} else {
+					a[*i][*k].sign = '*';
+					(*bombs)--;
+					if (a[*i][*k].nearby != -1)
+						(*correct)--;
+				}
+				printw("%c", a[*i][*k].sign);
+				mvprintw(rowtot - 3, 1, "Still %d bombs.\n",
+					 *bombs);
+			}
+			break;
+		case KEY_F(2): /* f2 to exit */
+			screen_end();
+			return 0;
+	}
+	return 1;
+}
+
 static void cascadeuncover(grid a[][N], int i, int k)
 {
 	int m, n;
@@ -240,7 +246,6 @@ static void victory_check(grid a[][N], int victory, int correct)
 	char losemesg[] = "You're a **cking loser.";
 	clear();
 	attron(A_BOLD);
-	attron(A_REVERSE);
 	attron(COLOR_PAIR(2));
 	if ((victory) && (correct == 1))
 		mvprintw(rowtot / 2, (coltot - strlen(winmesg)) / 2,
@@ -251,7 +256,6 @@ static void victory_check(grid a[][N], int victory, int correct)
 	refresh();
 	sleep(1);
 	attroff(A_BOLD);
-	attroff(A_REVERSE);
 	attroff(COLOR_PAIR);
 	endwin();
 	return;
