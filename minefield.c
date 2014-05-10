@@ -20,16 +20,15 @@ static void grid_init(grid a[][N], int bombs);
 static int num_bombs(void);
 static void cascadeuncover(grid a[][N], int i, int k);
 static int checknear(grid a[][N], int i, int k);
-static int win_check(grid a[][N]);
-static void victory_check(grid a[][N], int victory);
+static void victory_check(grid a[][N], int victory, int correct);
 
 /* Global variables */
 int horiz_space, vert_space; /* scaled values to fit terminal size */
-int  row, col, rowtot, coltot;
+int row, col, rowtot, coltot;
 
 int main(void)
 {
-	int bombs, i, k, victory = 1;
+	int bombs, i, k, victory = 1, correct = 1;
 	grid a[N][N];
 	srand(time(NULL));
 	bombs = num_bombs();
@@ -71,9 +70,13 @@ int main(void)
 				if (a[i][k].sign == '*') {
 					a[i][k].sign = '-';
 					bombs++;
+					if (a[i][k].nearby != -1)
+						correct++;
 				} else {
 					a[i][k].sign = '*';
 					bombs--;
+					if (a[i][k].nearby != -1)
+						correct--;
 				}
 				printw("%c", a[i][k].sign);
 				mvprintw(rowtot - 3, 1, "Still %d bombs.\n",
@@ -86,7 +89,7 @@ int main(void)
 		}
 	}
 	/* victory check. */
-	victory_check(a, victory);
+	victory_check(a, victory, correct);
 	return 0;
 }
 
@@ -231,19 +234,7 @@ static int checknear(grid a[][N], int i, int k)
 	return sum;
 }
 
-static int win_check(grid a[][N])
-{
-	int i, k;
-	for (i = 0; i < N; i++) {
-		for (k = 0; k < N; k++) {
-			if ((a[i][k].nearby == -1) && (a[i][k].sign != '*'))
-				return 0;
-		}
-	}
-	return 1; /* S**t! you won :( */
-}
-
-static void victory_check(grid a[][N], int victory)
+static void victory_check(grid a[][N], int victory, int correct)
 {
 	char winmesg[] = "YOU WIN! It was just luck...";
 	char losemesg[] = "You're a **cking loser.";
@@ -251,7 +242,7 @@ static void victory_check(grid a[][N], int victory)
 	attron(A_BOLD);
 	attron(A_REVERSE);
 	attron(COLOR_PAIR(2));
-	if ((victory) && win_check(a))
+	if ((victory) && (correct == 1))
 		mvprintw(rowtot / 2, (coltot - strlen(winmesg)) / 2,
 			 "%s", winmesg);
 	else
