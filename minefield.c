@@ -6,7 +6,7 @@
 #define N 20
 
 /*
-* char to be printed (* = has bomb, - = covered)
+* char to be printed ('*' = has bomb, '-' = covered)
 * nearby = -1 if bomb. Else is the number of bombs near the cell.
 */
 typedef struct {
@@ -121,11 +121,9 @@ static void grid_init(grid a[][N])
 
 static void num_bombs(void)
 {
-	do {
-		printf("Select level.\n*1 for easy, 2 for medium, ");
-		printf("3 for hard, 4 for...good luck!.\n");
-		scanf("%d", &bombs);
-	} while ((bombs < 1) && (bombs > 4));
+	printf("Select level.\n1 for easy, 2 for medium, ");
+	printf("3 for hard, 4 for...good luck!.\n");
+	scanf("%d", &bombs);
 	switch (bombs) {
 	case 1:
 		bombs = 25;
@@ -139,6 +137,8 @@ static void num_bombs(void)
 	case 4:
 		bombs = 80;
 		break;
+	default:
+		return num_bombs();
 	}
 }
 
