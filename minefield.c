@@ -200,7 +200,7 @@ static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct)
 static void cascadeuncover(grid a[][N], int i, int k)
 {
 	int m, n;
-	if ((i, k >= 0) && (i, k < N) && (a[i][k].sign == '-')) {
+	if ((i >= 0) && (i < N) && (k >= 0) && (k < N) && (a[i][k].sign == '-')) {
 		a[i][k].sign = '0' + a[i][k].nearby;
 		move(row + i * vert_space, col + k * horiz_space);
 		if (a[i][k].nearby != 0) {
