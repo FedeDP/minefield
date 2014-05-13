@@ -2,6 +2,7 @@
 #include <time.h>
 #include <string.h>
 #include <ncurses.h>
+#include <unistd.h>
 
 #define N 20
 
