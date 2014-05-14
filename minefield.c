@@ -22,6 +22,8 @@ static void num_bombs(void);
 static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct);
 static void cascadeuncover(grid a[][N], int i, int k);
 static int checknear(grid a[][N], int i, int k);
+void manage_space_press(grid a[][N], int *i, int *k, int *victory);
+void manage_enter_press(grid a[][N], int *i, int *k, int *correct);
 static void victory_check(grid a[][N], int victory, int correct);
 
 /* Global variables */
@@ -165,30 +167,12 @@ static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct)
 			(*i)++;
 		break;
 	case 32: /* space to uncover */
-		if (a[*i][*k].sign == '-') {
-			if (a[*i][*k].nearby == -1)
-				*victory = 0;
-			else
-				cascadeuncover(a, *i, *k);
-		}
+		if (a[*i][*k].sign == '-')
+			manage_space_press(a, i, k, victory);
 		break;
 	case 10: /* Enter to  identify a bomb */
-		if ((a[*i][*k].sign == '*') || (a[*i][*k].sign == '-')) {
-			if (a[*i][*k].sign == '*') {
-				a[*i][*k].sign = '-';
-				bombs++;
-				if (a[*i][*k].nearby != -1)
-					(*correct)++;
-			} else {
-				a[*i][*k].sign = '*';
-				bombs--;
-				if (a[*i][*k].nearby != -1)
-					(*correct)--;
-			}
-			printw("%c", a[*i][*k].sign);
-			mvprintw(rowtot - 3, 1, "Still %d bombs.\n",
-				 bombs);
-		}
+		if ((a[*i][*k].sign == '*') || (a[*i][*k].sign == '-'))
+			manage_enter_press(a, i, k, correct);
 		break;
 	case KEY_F(2): /* f2 to exit */
 		screen_end();
@@ -237,6 +221,32 @@ static int checknear(grid a[][N], int i, int k)
 		}
 	}
 	return sum;
+}
+
+void manage_space_press(grid a[][N], int *i, int *k, int *victory)
+{
+	if (a[*i][*k].nearby == -1)
+		*victory = 0;
+	else
+		cascadeuncover(a, *i, *k);
+}
+
+void manage_enter_press(grid a[][N], int *i, int *k, int *correct)
+{
+	if (a[*i][*k].sign == '*') {
+		a[*i][*k].sign = '-';
+		bombs++;
+		if (a[*i][*k].nearby != -1)
+			(*correct)++;
+	} else {
+		a[*i][*k].sign = '*';
+		bombs--;
+		if (a[*i][*k].nearby != -1)
+			(*correct)--;
+	}
+	printw("%c", a[*i][*k].sign);
+	mvprintw(rowtot - 3, 1, "Still %d bombs.\n",
+		 bombs);
 }
 
 static void victory_check(grid a[][N], int victory, int correct)
