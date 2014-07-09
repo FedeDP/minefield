@@ -7,9 +7,9 @@
 #define N 20
 
 /*
-* char to be printed ('*' = has bomb, '-' = covered)
-* nearby = -1 if bomb. Else is the number of bombs near the cell.
-*/
+ * char to be printed ('*' = has bomb, '-' = covered)
+ * nearby = -1 if bomb. Else it is the number of bombs near the cell.
+ */
 typedef struct {
 	char sign;
 	int nearby;
@@ -22,8 +22,8 @@ static void num_bombs(void);
 static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct);
 static void cascadeuncover(grid a[][N], int i, int k);
 static int checknear(grid a[][N], int i, int k);
-void manage_space_press(grid a[][N], int *i, int *k, int *victory);
-void manage_enter_press(grid a[][N], int *i, int *k, int *correct);
+static void manage_space_press(grid a[][N], int i, int k, int *victory);
+static void manage_enter_press(grid a[][N], int i, int k, int *correct);
 static void victory_check(grid a[][N], int victory, int correct);
 
 /* Global variables */
@@ -32,15 +32,13 @@ int row, col, rowtot, coltot, bombs;
 
 int main(void)
 {
-	int i, k, victory = 1, correct = 1;
+	int i = 0, k = 0, victory = 1, correct = 1;
 	grid a[N][N];
 	srand(time(NULL));
 	num_bombs();
 	grid_init(a);
 	if (screen_init(a))
 		return 1;
-	i = 0;
-	k = 0;
 	while ((victory) && (bombs > 0)) {
 		if (!main_cycle(a, &i, &k, &victory, &correct))
 			return 0;
@@ -168,11 +166,11 @@ static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct)
 		break;
 	case 32: /* space to uncover */
 		if (a[*i][*k].sign == '-')
-			manage_space_press(a, i, k, victory);
+			manage_space_press(a, *i, *k, victory);
 		break;
 	case 10: /* Enter to  identify a bomb */
 		if ((a[*i][*k].sign == '*') || (a[*i][*k].sign == '-'))
-			manage_enter_press(a, i, k, correct);
+			manage_enter_press(a, *i, *k, correct);
 		break;
 	case KEY_F(2): /* f2 to exit */
 		screen_end();
@@ -214,8 +212,7 @@ static int checknear(grid a[][N], int i, int k)
 	for (m = -1; m < 2; m++) {
 		if ((i + m >= 0) && (i + m < N)) {
 			for (n = -1; n < 2; n++) {
-				if ((a[i + m][k + n].nearby == -1) &&
-				    (k + n >= 0) && (k + n < N))
+				if ((k + n >= 0) && (k + n < N) && (a[i + m][k + n].nearby == -1))
 					sum++;
 			}
 		}
@@ -223,28 +220,28 @@ static int checknear(grid a[][N], int i, int k)
 	return sum;
 }
 
-void manage_space_press(grid a[][N], int *i, int *k, int *victory)
+static void manage_space_press(grid a[][N], int i, int k, int *victory)
 {
-	if (a[*i][*k].nearby == -1)
+	if (a[i][k].nearby == -1)
 		*victory = 0;
 	else
-		cascadeuncover(a, *i, *k);
+		cascadeuncover(a, i, k);
 }
 
-void manage_enter_press(grid a[][N], int *i, int *k, int *correct)
+static void manage_enter_press(grid a[][N], int i, int k, int *correct)
 {
-	if (a[*i][*k].sign == '*') {
-		a[*i][*k].sign = '-';
+	if (a[i][k].sign == '*') {
+		a[i][k].sign = '-';
 		bombs++;
-		if (a[*i][*k].nearby != -1)
+		if (a[i][k].nearby != -1)
 			(*correct)++;
 	} else {
-		a[*i][*k].sign = '*';
+		a[i][k].sign = '*';
 		bombs--;
-		if (a[*i][*k].nearby != -1)
+		if (a[i][k].nearby != -1)
 			(*correct)--;
 	}
-	printw("%c", a[*i][*k].sign);
+	printw("%c", a[i][k].sign);
 	mvprintw(rowtot - 3, 1, "Still %d bombs.\n",
 		 bombs);
 }
