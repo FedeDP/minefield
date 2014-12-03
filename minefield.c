@@ -66,10 +66,8 @@ static int screen_init(grid a[][N])
 	if ((rowtot < N + 4) || (coltot < N)) {
 		clear();
 		endwin();
-		printf("This screen has %d rows and %d columns. Enlarge it.\n",
-		       rowtot, coltot);
-		printf("You need at least %d rows and %d columns.\n",
-		       N + 4, N);
+		printf("This screen has %d rows and %d columns. Enlarge it.\n", rowtot, coltot);
+		printf("You need at least %d rows and %d columns.\n", N + 4, N);
 		return 1;
 	}
 	/* -4 to leave vertical space to the 3 helper lines below. */
@@ -80,8 +78,7 @@ static int screen_init(grid a[][N])
 	col = (coltot - (N - 1) * horiz_space) / 2;
 	for (i = 0; i < N; i++) {
 		for (k = 0; k < N; k++)
-			mvprintw(row + i * vert_space, col + k * horiz_space,
-				 "%c", a[i][k].sign);
+			mvprintw(row + i * vert_space, col + k * horiz_space, "%c", a[i][k].sign);
 	}
 	mvprintw(rowtot - 1, 1, "Enter to put a bomb (*). Space to uncover.\n");
 	mvprintw(rowtot - 2, 1, "F2 anytime to *rage* quit.\n");
@@ -122,8 +119,7 @@ static void grid_init(grid a[][N])
 
 static void num_bombs(void)
 {
-	printf("Select level.\n1 for easy, 2 for medium, ");
-	printf("3 for hard, 4 for...good luck!.\n");
+	printf("Select level.\n1 for easy, 2 for medium, 3 for hard, 4 for...good luck!.\n");
 	scanf("%d", &bombs);
 	switch (bombs) {
 	case 1:
@@ -242,8 +238,7 @@ static void manage_enter_press(grid a[][N], int i, int k, int *correct)
 			(*correct)--;
 	}
 	printw("%c", a[i][k].sign);
-	mvprintw(rowtot - 3, 1, "Still %d bombs.\n",
-		 bombs);
+	mvprintw(rowtot - 3, 1, "Still %d bombs.\n", bombs);
 }
 
 static void victory_check(grid a[][N], int victory, int correct)
@@ -254,11 +249,9 @@ static void victory_check(grid a[][N], int victory, int correct)
 	attron(A_BOLD);
 	attron(COLOR_PAIR(2));
 	if ((victory) && (correct == 1))
-		mvprintw(rowtot / 2, (coltot - strlen(winmesg)) / 2,
-			 "%s", winmesg);
+		mvprintw(rowtot / 2, (coltot - strlen(winmesg)) / 2, "%s", winmesg);
 	else
-		mvprintw(rowtot / 2, (coltot - strlen(losemesg)) / 2,
-			 "%s", losemesg);
+		mvprintw(rowtot / 2, (coltot - strlen(losemesg)) / 2, "%s", losemesg);
 	refresh();
 	sleep(1);
 	attroff(A_BOLD);
