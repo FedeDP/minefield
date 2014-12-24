@@ -15,42 +15,51 @@ typedef struct {
 	int nearby;
 } grid;
 
-static int screen_init(grid a[][N]);
-static void screen_end(void);
+static void screen_init(grid a[][N], int rowtot, int coltot);
+static void screen_end(int rowtot, int coltot);
 static void grid_init(grid a[][N]);
 static void num_bombs(void);
-static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct);
+static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int rowtot, int coltot);
 static void cascadeuncover(grid a[][N], int i, int k);
 static int checknear(grid a[][N], int i, int k);
 static void manage_space_press(grid a[][N], int i, int k, int *victory);
-static void manage_enter_press(grid a[][N], int i, int k, int *correct);
-static void victory_check(grid a[][N], int victory, int correct);
+static void manage_enter_press(grid a[][N], int i, int k, int *correct, int rowtot);
+static void victory_check(grid a[][N], int victory, int correct, int rowtot, int coltot);
 
 /* Global variables */
 int horiz_space, vert_space; /* scaled values to fit terminal size */
-int row, col, rowtot, coltot, bombs;
+int row, col, bombs;
 
 int main(void)
 {
 	int i = 0, k = 0, victory = 1, correct = 1;
+    int rowtot, coltot;
 	grid a[N][N];
 	srand(time(NULL));
 	num_bombs();
 	grid_init(a);
-	if (screen_init(a))
+    initscr();
+    getmaxyx(stdscr, rowtot, coltot);
+	/* check terminal size */
+	if ((rowtot < N + 4) || (coltot < N)) {
+		clear();
+		endwin();
+		printf("This screen has %d rows and %d columns. Enlarge it.\n", rowtot, coltot);
+		printf("You need at least %d rows and %d columns.\n", N + 4, N);
 		return 1;
+	}
+	screen_init(a, rowtot, coltot);
 	while ((victory) && (bombs > 0)) {
-		if (!main_cycle(a, &i, &k, &victory, &correct))
+		if (!main_cycle(a, &i, &k, &victory, &correct, rowtot, coltot))
 			return 0;
 	}
-	victory_check(a, victory, correct);
+	victory_check(a, victory, correct, rowtot, coltot);
 	return 0;
 }
 
-static int screen_init(grid a[][N])
+static void screen_init(grid a[][N], int rowtot, int coltot)
 {
 	int i, k;
-	initscr();
 	start_color();
 	init_pair(1, COLOR_RED, COLOR_BLACK);
 	init_pair(2, COLOR_GREEN, COLOR_BLACK);
@@ -61,15 +70,6 @@ static int screen_init(grid a[][N])
 	raw();
 	noecho();
 	keypad(stdscr, TRUE);
-	getmaxyx(stdscr, rowtot, coltot);
-	/* check terminal size */
-	if ((rowtot < N + 4) || (coltot < N)) {
-		clear();
-		endwin();
-		printf("This screen has %d rows and %d columns. Enlarge it.\n", rowtot, coltot);
-		printf("You need at least %d rows and %d columns.\n", N + 4, N);
-		return 1;
-	}
 	/* -4 to leave vertical space to the 3 helper lines below. */
 	vert_space = (rowtot - 4) / (N - 1);
 	horiz_space = coltot / (N - 1);
@@ -83,10 +83,9 @@ static int screen_init(grid a[][N])
 	mvprintw(rowtot - 1, 1, "Enter to put a bomb (*). Space to uncover.\n");
 	mvprintw(rowtot - 2, 1, "F2 anytime to *rage* quit.\n");
 	mvprintw(rowtot - 3, 1, "Still %d bombs.\n", bombs);
-	return 0;
 }
 
-static void screen_end(void)
+static void screen_end(int rowtot, int coltot)
 {
 	char exitmsg[] = "Leaving...bye! See you later :)";
 	clear();
@@ -139,7 +138,7 @@ static void num_bombs(void)
 	}
 }
 
-static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct)
+static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int rowtot, int coltot)
 {
 	move(row + *i * vert_space, col + *k * horiz_space);
 	refresh();
@@ -166,10 +165,10 @@ static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct)
 		break;
 	case 10: /* Enter to  identify a bomb */
 		if ((a[*i][*k].sign == '*') || (a[*i][*k].sign == '-'))
-			manage_enter_press(a, *i, *k, correct);
+			manage_enter_press(a, *i, *k, correct, rowtot);
 		break;
 	case KEY_F(2): /* f2 to exit */
-		screen_end();
+		screen_end(rowtot, coltot);
 		return 0;
 	}
 	return 1;
@@ -224,7 +223,7 @@ static void manage_space_press(grid a[][N], int i, int k, int *victory)
 		cascadeuncover(a, i, k);
 }
 
-static void manage_enter_press(grid a[][N], int i, int k, int *correct)
+static void manage_enter_press(grid a[][N], int i, int k, int *correct, int rowtot)
 {
 	if (a[i][k].sign == '*') {
 		a[i][k].sign = '-';
@@ -241,10 +240,10 @@ static void manage_enter_press(grid a[][N], int i, int k, int *correct)
 	mvprintw(rowtot - 3, 1, "Still %d bombs.\n", bombs);
 }
 
-static void victory_check(grid a[][N], int victory, int correct)
+static void victory_check(grid a[][N], int victory, int correct, int rowtot, int coltot)
 {
 	char winmesg[] = "YOU WIN! It was just luck...";
-	char losemesg[] = "You're a **cking loser.";
+	char losemesg[] = "You're a **cking loser. :P";
 	clear();
 	attron(A_BOLD);
 	attron(COLOR_PAIR(2));
@@ -257,5 +256,4 @@ static void victory_check(grid a[][N], int victory, int correct)
 	attroff(A_BOLD);
 	attroff(COLOR_PAIR);
 	endwin();
-	return;
 }
