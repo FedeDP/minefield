@@ -26,8 +26,8 @@ static void manage_enter_press(grid a[][N], int i, int k, int *correct);
 static void victory_check(grid a[][N], int victory, int correct, int rowtot, int coltot, int quit);
 
 /* Global variables */
-int horiz_space, vert_space; /* scaled values to fit terminal size */
-int bombs;
+static int horiz_space, vert_space; /* scaled values to fit terminal size */
+static int bombs;
 static WINDOW *field, *score;
 
 int main(void)
@@ -67,7 +67,6 @@ static void screen_init(grid a[][N], int rowtot, int coltot)
     init_pair(6, COLOR_CYAN, COLOR_BLACK);
     raw();
     noecho();
-    keypad(stdscr, TRUE);
     vert_space = (rowtot - 6) / N;
     horiz_space = (coltot - 2) / N;
     rows = ((N - 1) * vert_space) + 3;
@@ -75,6 +74,7 @@ static void screen_init(grid a[][N], int rowtot, int coltot)
     /* create sub windows centered */
     field = subwin(stdscr, rows, cols, (rowtot - 4 - rows) / 2, (coltot - cols) / 2);
     score = subwin(stdscr, 2 + 2, coltot, rowtot - 4, 0);
+    keypad(field, TRUE);
     wborder(field, '|', '|', '-', '-', '+', '+', '+', '+');
     wborder(score, '|', '|', '-', '-', '+', '+', '+', '+');
     for (i = 0; i < N; i++) {
@@ -83,7 +83,7 @@ static void screen_init(grid a[][N], int rowtot, int coltot)
     }
     mvwprintw(score, 2, 1, "Enter to put a bomb (*). Space to uncover. q anytime to *rage* quit.");
     mvwprintw(score, 1, 1, "Still %d bombs.", bombs);
-    //wrefresh(score);
+    wrefresh(score);
 }
 
 static void grid_init(grid a[][N])
@@ -132,13 +132,13 @@ static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, i
 {
     wmove(field, (*i * vert_space) + 1, (*k * horiz_space) + 1);
     wrefresh(field);
-    switch (getch()) {
+    switch (wgetch(field)) {
         case KEY_LEFT:
             if (*k != 0)
                 (*k)--;
             break;
         case KEY_RIGHT:
-            if (*k != N-1)
+            if (*k != N - 1)
                 (*k)++;
             break;
         case KEY_UP:
@@ -146,7 +146,7 @@ static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, i
                 (*i)--;
             break;
         case KEY_DOWN:
-            if (*i != N-1)
+            if (*i != N - 1)
                 (*i)++;
             break;
         case 32: /* space to uncover */
