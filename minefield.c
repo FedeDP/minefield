@@ -131,7 +131,6 @@ static void num_bombs(void)
 static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int *quit)
 {
     wmove(field, (*i * vert_space) + 1, (*k * horiz_space) + 1);
-    wrefresh(field);
     switch (wgetch(field)) {
         case KEY_LEFT:
             if (*k != 0)
