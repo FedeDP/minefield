@@ -15,47 +15,53 @@ typedef struct {
     int nearby;
 } grid;
 
-static void screen_init(grid a[][N], int rowtot, int coltot);
+/* Using this struct to lower number of vars passed to functions */
+struct values {
+    int a;
+    int b;
+};
+
+static void screen_init(grid a[][N], struct values dim, struct values *fixed_space);
 static void grid_init(grid a[][N]);
 static void num_bombs(void);
-static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int *quit);
-static void cascadeuncover(grid a[][N], int i, int k);
+static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int *quit, struct values fixed_space);
+static void cascadeuncover(grid a[][N], int i, int k, struct values fixed_space);
 static int checknear(grid a[][N], int i, int k);
-static void manage_space_press(grid a[][N], int i, int k, int *victory);
+static void manage_space_press(grid a[][N], int i, int k, int *victory, struct values fixed_space);
 static void manage_enter_press(grid a[][N], int i, int k, int *correct);
-static void victory_check(grid a[][N], int victory, int correct, int rowtot, int coltot, int quit);
+static void victory_check(grid a[][N], int victory, int correct, struct values dim, int quit);
 
 /* Global variables */
-static int horiz_space, vert_space; /* scaled values to fit terminal size */
 static int bombs;
 static WINDOW *field, *score;
 
 int main(void)
 {
     int i = 0, k = 0, victory = 1, correct = 1, quit = 0;
-    int rowtot, coltot;
+    struct values dim; /* dim of the screen */
+    struct values fixed_space; /* Values to fit terminal size */
     grid a[N][N];
     srand(time(NULL));
     num_bombs();
     grid_init(a);
     initscr();
-    getmaxyx(stdscr, rowtot, coltot);
+    getmaxyx(stdscr, dim.a, dim.b);
     /* check terminal size */
-    if ((rowtot < N + 6) || (coltot < N + 2)) {
+    if ((dim.a < N + 6) || (dim.b < N + 2)) {
         clear();
         endwin();
-        printf("This screen has %d rows and %d columns. Enlarge it.\n", rowtot, coltot);
+        printf("This screen has %d rows and %d columns. Enlarge it.\n", dim.a, dim.b);
         printf("You need at least %d rows and %d columns.\n", N + 6, N + 2);
         return 1;
     }
-    screen_init(a, rowtot, coltot);
+    screen_init(a, dim, &fixed_space);
     while ((victory) && (bombs > 0) && (!quit))
-        main_cycle(a, &i, &k, &victory, &correct, &quit);
-    victory_check(a, victory, correct, rowtot, coltot, quit);
+        main_cycle(a, &i, &k, &victory, &correct, &quit, fixed_space);
+    victory_check(a, victory, correct, dim, quit);
     return 0;
 }
 
-static void screen_init(grid a[][N], int rowtot, int coltot)
+static void screen_init(grid a[][N], struct values dim, struct values *fixed_space)
 {
     int i, k, rows, cols;
     start_color();
@@ -67,19 +73,28 @@ static void screen_init(grid a[][N], int rowtot, int coltot)
     init_pair(6, COLOR_CYAN, COLOR_BLACK);
     raw();
     noecho();
-    vert_space = (rowtot - 6) / N;
-    horiz_space = (coltot - 2) / N;
-    rows = ((N - 1) * vert_space) + 3;
-    cols = ((N - 1) * horiz_space) + 3;
+    /* Magic numbers explanation:
+     * (dim.a - 6) : 6 -> 4 lines of borders + 2 lines of score WIN
+     * (dim.b - 2) : only 2 lines of borders
+     * rows and cols -> + 3 : real dimensions of the field subwin,
+     * calculated as N - 1 spaces between N elements of the grid (both vertical
+     * and horizontal, multiplied fixed_space (either vertical or horizontal)
+     * + 3: 2 for the borders and 1 for the first elem
+     Graphicallly explained: |O O O O O| -> i have 5 elements, with a total number
+     of 4 spaces between them, plus 2 borders, plus 1 for the first elem. */
+    fixed_space->a = (dim.a - 6) / N;
+    fixed_space->b = (dim.b - 2) / N;
+    rows = ((N - 1) * fixed_space->a) + 3;
+    cols = ((N - 1) * fixed_space->b) + 3;
     /* create sub windows centered */
-    field = subwin(stdscr, rows, cols, (rowtot - 4 - rows) / 2, (coltot - cols) / 2);
-    score = subwin(stdscr, 2 + 2, coltot, rowtot - 4, 0);
+    field = subwin(stdscr, rows, cols, (dim.a - 4 - rows) / 2, (dim.b - cols) / 2);
+    score = subwin(stdscr, 2 + 2, dim.b, dim.a - 4, 0);
     keypad(field, TRUE);
     wborder(field, '|', '|', '-', '-', '+', '+', '+', '+');
     wborder(score, '|', '|', '-', '-', '+', '+', '+', '+');
     for (i = 0; i < N; i++) {
         for (k = 0; k < N; k++)
-            mvwprintw(field, (i * vert_space) + 1, (k * horiz_space) + 1, "%c", a[i][k].sign);
+            mvwprintw(field, (i * fixed_space->a) + 1, (k * fixed_space->b) + 1, "%c", a[i][k].sign);
     }
     mvwprintw(score, 2, 1, "Enter to put a bomb (*). Space to uncover. q anytime to *rage* quit.");
     mvwprintw(score, 1, 1, "Still %d bombs.", bombs);
@@ -128,9 +143,9 @@ static void num_bombs(void)
     }
 }
 
-static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int *quit)
+static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, int *quit, struct values fixed_space)
 {
-    wmove(field, (*i * vert_space) + 1, (*k * horiz_space) + 1);
+    wmove(field, (*i * fixed_space.a) + 1, (*k * fixed_space.b) + 1);
     switch (wgetch(field)) {
         case KEY_LEFT:
             if (*k != 0)
@@ -150,7 +165,7 @@ static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, i
             break;
         case 32: /* space to uncover */
             if (a[*i][*k].sign == '-')
-                manage_space_press(a, *i, *k, victory);
+                manage_space_press(a, *i, *k, victory, fixed_space);
             break;
         case 10: /* Enter to  identify a bomb */
             if ((a[*i][*k].sign == '*') || (a[*i][*k].sign == '-'))
@@ -163,12 +178,12 @@ static int main_cycle(grid a[][N], int *i, int *k, int *victory, int *correct, i
     return 1;
 }
 
-static void cascadeuncover(grid a[][N], int i, int k)
+static void cascadeuncover(grid a[][N], int i, int k, struct values fixed_space)
 {
     int m, n;
     if ((i >= 0) && (i < N) && (k >= 0) && (k < N) && (a[i][k].sign == '-')) {
         a[i][k].sign = '0' + a[i][k].nearby;
-        wmove(field, (i * vert_space) + 1, (k * horiz_space) + 1);
+        wmove(field, (i * fixed_space.a) + 1, (k * fixed_space.b) + 1);
         if (a[i][k].nearby != 0) {
             if (a[i][k].nearby >= 4)
                 wattron(field, COLOR_PAIR(1));
@@ -184,7 +199,7 @@ static void cascadeuncover(grid a[][N], int i, int k)
             wattroff(field, A_BOLD);
             for (m = -1; m < 2; m++) {
                 for (n = -1; n < 2; n++)
-                    cascadeuncover(a, i + m, k + n);
+                    cascadeuncover(a, i + m, k + n, fixed_space);
             }
         }
     }
@@ -204,12 +219,12 @@ static int checknear(grid a[][N], int i, int k)
     return sum;
 }
 
-static void manage_space_press(grid a[][N], int i, int k, int *victory)
+static void manage_space_press(grid a[][N], int i, int k, int *victory, struct values fixed_space)
 {
     if (a[i][k].nearby == -1)
         *victory = 0;
     else
-        cascadeuncover(a, i, k);
+        cascadeuncover(a, i, k, fixed_space);
 }
 
 static void manage_enter_press(grid a[][N], int i, int k, int *correct)
@@ -230,7 +245,7 @@ static void manage_enter_press(grid a[][N], int i, int k, int *correct)
     wrefresh(score);
 }
 
-static void victory_check(grid a[][N], int victory, int correct, int rowtot, int coltot, int quit)
+static void victory_check(grid a[][N], int victory, int correct, struct values dim, int quit)
 {
     char winmesg[] = "YOU WIN! It was just luck...";
     char losemesg[] = "You're a **cking loser. :P";
@@ -241,13 +256,13 @@ static void victory_check(grid a[][N], int victory, int correct, int rowtot, int
     delwin(score);
     attron(A_BOLD);
     attron(COLOR_PAIR(rand() % 6 + 1));
-    if (quit == 0) {
+    if (!quit) {
         if ((victory) && (correct == 1))
-            mvprintw(rowtot / 2, (coltot - strlen(winmesg)) / 2, "%s", winmesg);
+            mvprintw(dim.a / 2, (dim.b - strlen(winmesg)) / 2, "%s", winmesg);
         else
-            mvprintw(rowtot / 2, (coltot - strlen(losemesg)) / 2, "%s", losemesg);
+            mvprintw(dim.a / 2, (dim.b - strlen(losemesg)) / 2, "%s", losemesg);
     } else {
-         mvprintw(rowtot / 2, (coltot - strlen(exitmsg)) / 2, "%s", exitmsg);
+         mvprintw(dim.a / 2, (dim.b - strlen(exitmsg)) / 2, "%s", exitmsg);
     }
     refresh();
     sleep(1);
