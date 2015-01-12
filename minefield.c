@@ -15,7 +15,7 @@ struct values {
 };
 
 static void screen_init(int a[][N], struct values dim, struct values *fixed_space);
-static void int_init(int a[][N]);
+static void grid_init(int a[][N]);
 static void num_bombs(void);
 static int main_cycle(int a[][N], int *i, int *k, int *victory, int *correct, int *quit, struct values fixed_space);
 static void cascadeuncover(int a[][N], int i, int k, struct values fixed_space);
@@ -36,7 +36,7 @@ int main(void)
     int a[N][N];
     srand(time(NULL));
     num_bombs();
-    int_init(a);
+    grid_init(a);
     initscr();
     getmaxyx(stdscr, dim.a, dim.b);
     /* check terminal size */
@@ -94,7 +94,7 @@ static void screen_init(int a[][N], struct values dim, struct values *fixed_spac
     wrefresh(score);
 }
 
-static void int_init(int a[][N])
+static void grid_init(int a[][N])
 {
     int i, k, row, col;
     /* Generates random bombs */
