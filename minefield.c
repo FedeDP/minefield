@@ -15,7 +15,7 @@ struct values {
 };
 
 static void screen_init(int a[][N], struct values dim, struct values *fixed_space);
-static void grid_init(int a[][N]);
+static void grid_init(int a[][N],struct values fixed_space);
 static void num_bombs(void);
 static int main_cycle(int a[][N], int *i, int *k, int *victory, int *correct, int *quit, struct values fixed_space);
 static void cascadeuncover(int a[][N], int i, int k, struct values fixed_space);
@@ -36,18 +36,17 @@ int main(void)
     int a[N][N];
     srand(time(NULL));
     num_bombs();
-    grid_init(a);
     initscr();
     getmaxyx(stdscr, dim.a, dim.b);
     /* check terminal size */
     if ((dim.a < N + 6) || (dim.b < N + 2)) {
         clear();
         endwin();
-        printf("This screen has %d rows and %d columns. Enlarge it.\n", dim.a, dim.b);
-        printf("You need at least %d rows and %d columns.\n", N + 6, N + 2);
+        printf("This screen has %d rows and %d columns. Enlarge it.\nYou need at least %d rows and %d columns.", dim.a, dim.b, N + 6, N + 2);
         return 1;
     }
     screen_init(a, dim, &fixed_space);
+    grid_init(a, fixed_space);
     while ((victory) && (bombs > 0) && (!quit))
         main_cycle(a, &i, &k, &victory, &correct, &quit, fixed_space);
     victory_check(a, victory, correct, dim, quit);
@@ -56,7 +55,7 @@ int main(void)
 
 static void screen_init(int a[][N], struct values dim, struct values *fixed_space)
 {
-    int i, k, rows, cols;
+    int rows, cols;
     start_color();
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_GREEN, COLOR_BLACK);
@@ -73,8 +72,8 @@ static void screen_init(int a[][N], struct values dim, struct values *fixed_spac
      * calculated as N - 1 spaces between N elements of the int (both vertical
      * and horizontal, multiplied fixed_space (either vertical or horizontal)
      * + 3: 2 for the borders and 1 for the first elem
-     Graphicallly explained: |O O O O O| -> i have 5 elements, with a total number
-     of 4 spaces between them, plus 2 borders, plus 1 for the first elem. */
+     Graphicallly explained: |O O O O O| -> 5 elements, with a total number
+     of 4 spaces between them, plus 2 for the borders, plus 1 for the first elem. */
     fixed_space->a = (dim.a - 6) / N;
     fixed_space->b = (dim.b - 2) / N;
     rows = ((N - 1) * fixed_space->a) + 3;
@@ -85,16 +84,12 @@ static void screen_init(int a[][N], struct values dim, struct values *fixed_spac
     keypad(field, TRUE);
     wborder(field, '|', '|', '-', '-', '+', '+', '+', '+');
     wborder(score, '|', '|', '-', '-', '+', '+', '+', '+');
-    for (i = 0; i < N; i++) {
-        for (k = 0; k < N; k++)
-            mvwprintw(field, (i * fixed_space->a) + 1, (k * fixed_space->b) + 1, COVERED_CHAR);
-    }
     mvwprintw(score, 2, 1, "Enter to put a bomb (*). Space to uncover. q anytime to *rage* quit.");
     mvwprintw(score, 1, 1, "Still %d bombs.", bombs);
     wrefresh(score);
 }
 
-static void grid_init(int a[][N])
+static void grid_init(int a[][N], struct values fixed_space)
 {
     int i, k, row, col;
     /* Generates random bombs */
@@ -107,6 +102,7 @@ static void grid_init(int a[][N])
     }
     for (i = 0; i < N; i++) {
         for (k = 0; k < N; k++) {
+            mvwprintw(field, (i * fixed_space.a) + 1, (k * fixed_space.b) + 1, COVERED_CHAR);
             if (a[i][k] != -1)
                 a[i][k] = checknear(a, i, k);
         }
