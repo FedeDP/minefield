@@ -100,6 +100,7 @@ static void grid_init(int a[][N], struct values fixed_space)
         } while (a[row][col] == -1);
         a[row][col] = -1;
     }
+    wattron(field, COLOR_PAIR(2));
     for (i = 0; i < N; i++) {
         for (k = 0; k < N; k++) {
             mvwprintw(field, (i * fixed_space.a) + 1, (k * fixed_space.b) + 1, COVERED_CHAR);
@@ -107,6 +108,7 @@ static void grid_init(int a[][N], struct values fixed_space)
                 a[i][k] = checknear(a, i, k);
         }
     }
+     wattroff(field, COLOR_PAIR);
 }
 
 static void num_bombs(void)
@@ -219,11 +221,13 @@ static void manage_space_press(int a[][N], int i, int k, int *victory, struct va
 static void manage_enter_press(int a[][N], int i, int k, int *correct, char c)
 {
     if (c == *BOMB_CHAR) {
+        wattron(field, COLOR_PAIR(2));
         c = *COVERED_CHAR;
         bombs++;
         if (a[i][k] != -1)
             (*correct)++;
     } else {
+        wattron(field, COLOR_PAIR(1));
         c = *BOMB_CHAR;
         bombs--;
         if (a[i][k] != -1)
@@ -231,6 +235,7 @@ static void manage_enter_press(int a[][N], int i, int k, int *correct, char c)
     }
     wprintw(field, "%c", c);
     mvwprintw(score, 1, 1, "Still %d bombs.", bombs);
+    wattroff(field, COLOR_PAIR);
     wrefresh(score);
 }
 
