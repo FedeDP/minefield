@@ -42,7 +42,7 @@ int main(void)
     if ((dim.a < N + 6) || (dim.b < N + 2)) {
         clear();
         endwin();
-        printf("This screen has %d rows and %d columns. Enlarge it.\nYou need at least %d rows and %d columns.", dim.a, dim.b, N + 6, N + 2);
+        printf("This screen has %d rows and %d columns. Enlarge it.\nYou need at least %d rows and %d columns.\n", dim.a, dim.b, N + 6, N + 2);
         return 1;
     }
     screen_init(a, dim, &fixed_space);
