@@ -139,20 +139,24 @@ static int main_cycle(int a[][N], int *i, int *k, int *victory, int *correct, in
     wmove(field, (*i * fixed_space.a) + 1, (*k * fixed_space.b) + 1);
     switch (wgetch(field)) {
         case KEY_LEFT:
-            if (*k != 0)
-                (*k)--;
+            (*k)--;
+            if (*k < 0)
+                *k = N - 1;
             break;
         case KEY_RIGHT:
-            if (*k != N - 1)
-                (*k)++;
+            (*k)++;
+            if (*k > N - 1)
+                *k = 0;
             break;
         case KEY_UP:
-            if (*i != 0)
-                (*i)--;
+            (*i)--;
+            if (*i < 0)
+                *i = N - 1;
             break;
         case KEY_DOWN:
-            if (*i != N - 1)
-                (*i)++;
+            (*i)++;
+            if (*i > N - 1)
+                *i = 0;
             break;
         case 32: /* space to uncover */
             if (c == *COVERED_CHAR)
