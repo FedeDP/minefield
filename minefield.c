@@ -14,26 +14,38 @@ struct values {
     int b;
 };
 
+/* program state struct */
+struct program_state {
+    int bombs;
+    int victory;
+    int correct;
+    int quit;
+};
+
 static void screen_init(int a[][N], struct values dim, struct values *fixed_space);
 static void grid_init(int a[][N],struct values fixed_space);
 static void num_bombs(void);
-static int main_cycle(int a[][N], int *i, int *k, int *victory, int *correct, int *quit, struct values fixed_space);
+static int main_cycle(int a[][N], int *i, int *k, struct values fixed_space);
 static void cascadeuncover(int a[][N], int i, int k, struct values fixed_space);
 static int checknear(int a[][N], int i, int k);
-static void manage_space_press(int a[][N], int i, int k, int *victory, struct values fixed_space);
-static void manage_enter_press(int a[][N], int i, int k, int *correct, char c);
-static void victory_check(int a[][N], int victory, int correct, struct values dim, int quit);
+static void manage_space_press(int a[][N], int i, int k, struct values fixed_space);
+static void manage_enter_press(int a[][N], int i, int k, char c);
+static void victory_check(int a[][N], struct values dim);
 
 /* Global variables */
-static int bombs;
+static struct program_state ps = {
+    .victory = 1,
+    .correct = 1,
+    .quit = 0,
+};
 static WINDOW *field, *score;
 
 int main(void)
 {
-    int i = 0, k = 0, victory = 1, correct = 1, quit = 0;
+    int i = 0, k = 0;
+    int a[N][N];
     struct values dim; /* dim of the screen */
     struct values fixed_space; /* Values to fit terminal size */
-    int a[N][N];
     srand(time(NULL));
     num_bombs();
     initscr();
@@ -47,9 +59,9 @@ int main(void)
     }
     screen_init(a, dim, &fixed_space);
     grid_init(a, fixed_space);
-    while ((victory) && (bombs > 0) && (!quit))
-        main_cycle(a, &i, &k, &victory, &correct, &quit, fixed_space);
-    victory_check(a, victory, correct, dim, quit);
+    while ((ps.victory) && (ps.bombs > 0) && (!ps.quit))
+        main_cycle(a, &i, &k, fixed_space);
+    victory_check(a, dim);
     return 0;
 }
 
@@ -85,7 +97,7 @@ static void screen_init(int a[][N], struct values dim, struct values *fixed_spac
     wborder(field, '|', '|', '-', '-', '+', '+', '+', '+');
     wborder(score, '|', '|', '-', '-', '+', '+', '+', '+');
     mvwprintw(score, 2, 1, "Enter to put a bomb (*). Space to uncover. q anytime to *rage* quit.");
-    mvwprintw(score, 1, 1, "Still %d bombs.", bombs);
+    mvwprintw(score, 1, 1, "Still %d bombs.", ps.bombs);
     wrefresh(score);
 }
 
@@ -93,7 +105,7 @@ static void grid_init(int a[][N], struct values fixed_space)
 {
     int i, k, row, col;
     /* Generates random bombs */
-    for (i = 0; i < bombs; i++) {
+    for (i = 0; i < ps.bombs; i++) {
         do {
             row = rand()%N;
             col = rand()%N;
@@ -114,26 +126,26 @@ static void grid_init(int a[][N], struct values fixed_space)
 static void num_bombs(void)
 {
     printf("Select level.\n1 for easy, 2 for medium, 3 for hard, 4 for...good luck!.\n");
-    scanf("%d", &bombs);
-    switch (bombs) {
+    scanf("%d", &ps.bombs);
+    switch (ps.bombs) {
         case 1:
-            bombs = 25;
+            ps.bombs = 25;
             break;
         case 2:
-            bombs = 40;
+            ps.bombs = 40;
             break;
         case 3:
-            bombs = 65;
+            ps.bombs = 65;
             break;
         case 4:
-            bombs = 80;
+            ps.bombs = 80;
             break;
         default:
             return num_bombs();
     }
 }
 
-static int main_cycle(int a[][N], int *i, int *k, int *victory, int *correct, int *quit, struct values fixed_space)
+static int main_cycle(int a[][N], int *i, int *k, struct values fixed_space)
 {
     char c = mvwinch(field, (*i * fixed_space.a) + 1, (*k * fixed_space.b) + 1) & A_CHARTEXT;
     wmove(field, (*i * fixed_space.a) + 1, (*k * fixed_space.b) + 1);
@@ -160,14 +172,14 @@ static int main_cycle(int a[][N], int *i, int *k, int *victory, int *correct, in
             break;
         case 32: /* space to uncover */
             if (c == *COVERED_CHAR)
-                manage_space_press(a, *i, *k, victory, fixed_space);
+                manage_space_press(a, *i, *k, fixed_space);
             break;
         case 10: /* Enter to  identify a bomb */
             if (c == *COVERED_CHAR || c == *BOMB_CHAR)
-                manage_enter_press(a, *i, *k, correct, c);
+                manage_enter_press(a, *i, *k, c);
             break;
         case 'q': /* q to exit */
-            *quit = 1;
+            ps.quit = 1;
             break;
     }
     return 1;
@@ -214,36 +226,36 @@ static int checknear(int a[][N], int i, int k)
     return sum;
 }
 
-static void manage_space_press(int a[][N], int i, int k, int *victory, struct values fixed_space)
+static void manage_space_press(int a[][N], int i, int k, struct values fixed_space)
 {
     if (a[i][k] == -1)
-        *victory = 0;
+        ps.victory = 0;
     else
         cascadeuncover(a, i, k, fixed_space);
 }
 
-static void manage_enter_press(int a[][N], int i, int k, int *correct, char c)
+static void manage_enter_press(int a[][N], int i, int k, char c)
 {
     if (c == *BOMB_CHAR) {
         wattron(field, COLOR_PAIR(2));
         c = *COVERED_CHAR;
-        bombs++;
+        ps.bombs++;
         if (a[i][k] != -1)
-            (*correct)++;
+            ps.correct++;
     } else {
         wattron(field, COLOR_PAIR(1));
         c = *BOMB_CHAR;
-        bombs--;
+        ps.bombs--;
         if (a[i][k] != -1)
-            (*correct)--;
+            ps.correct--;
     }
     wprintw(field, "%c", c);
-    mvwprintw(score, 1, 1, "Still %d bombs.", bombs);
+    mvwprintw(score, 1, 1, "Still %d bombs.", ps.bombs);
     wattroff(field, COLOR_PAIR);
     wrefresh(score);
 }
 
-static void victory_check(int a[][N], int victory, int correct, struct values dim, int quit)
+static void victory_check(int a[][N], struct values dim)
 {
     char winmesg[] = "YOU WIN! It was just luck...";
     char losemesg[] = "You're a **cking loser. :P";
@@ -254,8 +266,8 @@ static void victory_check(int a[][N], int victory, int correct, struct values di
     delwin(score);
     attron(A_BOLD);
     attron(COLOR_PAIR(rand() % 6 + 1));
-    if (!quit) {
-        if ((victory) && (correct == 1))
+    if (!ps.quit) {
+        if ((ps.victory) && (ps.correct == 1))
             mvprintw(dim.a / 2, (dim.b - strlen(winmesg)) / 2, "%s", winmesg);
         else
             mvprintw(dim.a / 2, (dim.b - strlen(losemesg)) / 2, "%s", losemesg);
@@ -267,4 +279,5 @@ static void victory_check(int a[][N], int victory, int correct, struct values di
     attroff(A_BOLD);
     attroff(COLOR_PAIR);
     endwin();
+    delwin(stdscr);
 }
