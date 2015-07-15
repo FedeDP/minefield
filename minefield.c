@@ -43,7 +43,7 @@ static WINDOW *field, *score;
 int main(void)
 {
     int i = 0, k = 0;
-    int a[N][N];
+    int a[N][N] = {{}};
     struct values dim; /* dim of the screen */
     struct values fixed_space; /* Values to fit terminal size */
     srand(time(NULL));
