@@ -7,6 +7,7 @@
 #define N 20
 #define BOMB_CHAR "*"
 #define COVERED_CHAR "-"
+#define HAS_BOMB -1
 
 /* Using this struct to lower number of vars passed to functions */
 struct values {
@@ -46,6 +47,7 @@ int main(void)
     int a[N][N] = {{}};
     struct values dim; /* dim of the screen */
     struct values fixed_space; /* Values to fit terminal size */
+
     srand(time(NULL));
     num_bombs();
     initscr();
@@ -59,8 +61,9 @@ int main(void)
     }
     screen_init(a, dim, &fixed_space);
     grid_init(a, fixed_space);
-    while ((ps.victory) && (ps.bombs > 0) && (!ps.quit))
+    while ((ps.victory) && (ps.bombs > 0) && (!ps.quit)) {
         main_cycle(a, &i, &k, fixed_space);
+    }
     victory_check(a, dim);
     return 0;
 }
@@ -68,6 +71,7 @@ int main(void)
 static void screen_init(int a[][N], struct values dim, struct values *fixed_space)
 {
     int rows, cols;
+
     start_color();
     init_pair(1, COLOR_RED, COLOR_BLACK);
     init_pair(2, COLOR_GREEN, COLOR_BLACK);
@@ -104,20 +108,22 @@ static void screen_init(int a[][N], struct values dim, struct values *fixed_spac
 static void grid_init(int a[][N], struct values fixed_space)
 {
     int i, k, row, col;
+
     /* Generates random bombs */
     for (i = 0; i < ps.bombs; i++) {
         do {
             row = rand()%N;
             col = rand()%N;
-        } while (a[row][col] == -1);
-        a[row][col] = -1;
+        } while (a[row][col] == HAS_BOMB);
+        a[row][col] = HAS_BOMB;
     }
     wattron(field, COLOR_PAIR(2));
     for (i = 0; i < N; i++) {
         for (k = 0; k < N; k++) {
             mvwprintw(field, (i * fixed_space.a) + 1, (k * fixed_space.b) + 1, COVERED_CHAR);
-            if (a[i][k] != -1)
+            if (a[i][k] != HAS_BOMB) {
                 a[i][k] = checknear(a, i, k);
+            }
         }
     }
      wattroff(field, COLOR_PAIR);
@@ -148,35 +154,30 @@ static void num_bombs(void)
 static int main_cycle(int a[][N], int *i, int *k, struct values fixed_space)
 {
     char c = mvwinch(field, (*i * fixed_space.a) + 1, (*k * fixed_space.b) + 1) & A_CHARTEXT;
+
     wmove(field, (*i * fixed_space.a) + 1, (*k * fixed_space.b) + 1);
     switch (wgetch(field)) {
         case KEY_LEFT:
-            (*k)--;
-            if (*k < 0)
-                *k = N - 1;
+            *k = (*k - 1 + N) % N;
             break;
         case KEY_RIGHT:
-            (*k)++;
-            if (*k > N - 1)
-                *k = 0;
+            *k = (*k + 1 + N) % N;
             break;
         case KEY_UP:
-            (*i)--;
-            if (*i < 0)
-                *i = N - 1;
+            *i = (*i - 1 + N) % N;
             break;
         case KEY_DOWN:
-            (*i)++;
-            if (*i > N - 1)
-                *i = 0;
+            *i = (*i + 1 + N) % N;
             break;
         case 32: /* space to uncover */
-            if (c == *COVERED_CHAR)
+            if (c == *COVERED_CHAR) {
                 manage_space_press(a, *i, *k, fixed_space);
+            }
             break;
         case 10: /* Enter to  identify a bomb */
-            if (c == *COVERED_CHAR || c == *BOMB_CHAR)
+            if (c == *COVERED_CHAR || c == *BOMB_CHAR) {
                 manage_enter_press(a, *i, *k, c);
+            }
             break;
         case 'q': /* q to exit */
             ps.quit = 1;
@@ -189,13 +190,15 @@ static void cascadeuncover(int a[][N], int i, int k, struct values fixed_space)
 {
     int m, n;
     char c = mvwinch(field, (i * fixed_space.a) + 1, (k * fixed_space.b) + 1) & A_CHARTEXT;
+
     if ((i >= 0) && (i < N) && (k >= 0) && (k < N) && (c == *COVERED_CHAR)) {
         wmove(field, (i * fixed_space.a) + 1, (k * fixed_space.b) + 1);
         if (a[i][k] != 0) {
-            if (a[i][k] >= 4)
+            if (a[i][k] >= 4) {
                 wattron(field, COLOR_PAIR(1));
-            else
+            } else {
                 wattron(field, COLOR_PAIR(a[i][k] + 3));
+            }
             wprintw(field, "%d", a[i][k]);
             wattroff(field, COLOR_PAIR);
         } else {
@@ -205,8 +208,9 @@ static void cascadeuncover(int a[][N], int i, int k, struct values fixed_space)
             wattroff(field, COLOR_PAIR);
             wattroff(field, A_BOLD);
             for (m = -1; m < 2; m++) {
-                for (n = -1; n < 2; n++)
+                for (n = -1; n < 2; n++) {
                     cascadeuncover(a, i + m, k + n, fixed_space);
+                }
             }
         }
     }
@@ -215,11 +219,13 @@ static void cascadeuncover(int a[][N], int i, int k, struct values fixed_space)
 static int checknear(int a[][N], int i, int k)
 {
     int m, n, sum = 0;
+
     for (m = -1; m < 2; m++) {
         if ((i + m >= 0) && (i + m < N)) {
             for (n = -1; n < 2; n++) {
-                if ((k + n >= 0) && (k + n < N) && (a[i + m][k + n] == -1))
+                if ((k + n >= 0) && (k + n < N) && (a[i + m][k + n] == -1)) {
                     sum++;
+                }
             }
         }
     }
@@ -228,10 +234,11 @@ static int checknear(int a[][N], int i, int k)
 
 static void manage_space_press(int a[][N], int i, int k, struct values fixed_space)
 {
-    if (a[i][k] == -1)
+    if (a[i][k] == HAS_BOMB) {
         ps.victory = 0;
-    else
+    } else {
         cascadeuncover(a, i, k, fixed_space);
+    }
 }
 
 static void manage_enter_press(int a[][N], int i, int k, char c)
@@ -240,14 +247,16 @@ static void manage_enter_press(int a[][N], int i, int k, char c)
         wattron(field, COLOR_PAIR(2));
         c = *COVERED_CHAR;
         ps.bombs++;
-        if (a[i][k] != -1)
+        if (a[i][k] != HAS_BOMB) {
             ps.correct++;
+        }
     } else {
         wattron(field, COLOR_PAIR(1));
         c = *BOMB_CHAR;
         ps.bombs--;
-        if (a[i][k] != -1)
+        if (a[i][k] != HAS_BOMB) {
             ps.correct--;
+        }
     }
     wprintw(field, "%c", c);
     mvwprintw(score, 1, 1, "Still %d bombs.", ps.bombs);
@@ -260,6 +269,7 @@ static void victory_check(int a[][N], struct values dim)
     char winmesg[] = "YOU WIN! It was just luck...";
     char losemesg[] = "You're a **cking loser. :P";
     char exitmsg[] = "Leaving...bye! See you later :)";
+
     wclear(field);
     wclear(score);
     delwin(field);
@@ -267,10 +277,11 @@ static void victory_check(int a[][N], struct values dim)
     attron(A_BOLD);
     attron(COLOR_PAIR(rand() % 6 + 1));
     if (!ps.quit) {
-        if ((ps.victory) && (ps.correct == 1))
+        if ((ps.victory) && (ps.correct == 1)) {
             mvprintw(dim.a / 2, (dim.b - strlen(winmesg)) / 2, "%s", winmesg);
-        else
+        } else {
             mvprintw(dim.a / 2, (dim.b - strlen(losemesg)) / 2, "%s", losemesg);
+        }
     } else {
          mvprintw(dim.a / 2, (dim.b - strlen(exitmsg)) / 2, "%s", exitmsg);
     }
