@@ -54,10 +54,9 @@ int main(void)
     getmaxyx(stdscr, dim.a, dim.b);
     /* check terminal size */
     if ((dim.a < N + 6) || (dim.b < N + 2)) {
-        clear();
         endwin();
         printf("This screen has %d rows and %d columns. Enlarge it.\nYou need at least %d rows and %d columns.\n", dim.a, dim.b, N + 6, N + 2);
-        return 1;
+        exit(EXIT_FAILURE);
     }
     screen_init(a, dim, &fixed_space);
     grid_init(a, fixed_space);
@@ -65,7 +64,7 @@ int main(void)
         main_cycle(a, &i, &k, fixed_space);
     }
     victory_check(a, dim);
-    return 0;
+    exit(EXIT_SUCCESS);
 }
 
 static void screen_init(int a[][N], struct values dim, struct values *fixed_space)
@@ -287,8 +286,6 @@ static void victory_check(int a[][N], struct values dim)
     }
     refresh();
     sleep(1);
-    attroff(A_BOLD);
-    attroff(COLOR_PAIR);
     endwin();
     delwin(stdscr);
 }
